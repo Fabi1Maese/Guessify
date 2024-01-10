@@ -49,48 +49,73 @@ redirect_uri = config['CREDS']['redirect_uri']
 #     print("invalid token")
 
 
+# define the User object
+class User():
+    def __init__(self, sp_token):
+        self.sp_token = sp_token
+        self.user_id = sp_token.me()['id']
+        self.display_name = sp_token.me()['display_name']
+        self.saved_tracks = []
+        self.temp_files_path = config['tempfiles']['path']
+        self.text_file_path = self.temp_files_path +  '/' + game_code + '/' + self.user_id + ".txt"
+
+
+    def assign_to_room(self, game_code):
+        self.game_code = game_code
+
+    # write all saved tracks of the session user 
+    def write_all_saved_tracks_url(self):
+        temp_files_path = self.temp_files_path
+        game_code = self.game_code
+        sp_token = self.sp_token
+
+        # creates tempfiles/gamecode path if not exists
+        Path(temp_files_path + '/' + game_code).mkdir(parents=True, exist_ok=True)
+
+        current_offset = 0
+        while True:
+            # limit has a maximum of 50 tracks at a time
+            results = sp_token.current_user_saved_tracks(limit = 50, offset=current_offset)
+            self.write_tracks_url_to_txt(results)
+            # 1 set of results = 50 tracks
+            # check if there's more
+            if results['next']:
+                current_offset += 50
+
+            else:
+                break
+
+    # write a batch of 50 tracks urls into the appropriate txt file
+    def write_tracks_url_to_txt(self, user_saved_tracks):
+        text_file_path = self.text_file_path
+        with open(text_file_path, 'a') as file_out:
+            for idx, item in enumerate(user_saved_tracks['items']):
+                    track = item['track']
+                    track_url = track['external_urls']['spotify']
+                    file_out.write(track_url + '\n')
+            file_out.close()
+
+    
+    # return one random track url in a txt file
+    def select_one_random_track(self):
+        txt_file = self.text_file_path
+        file = open(txt_file, "r")
+        all_tracks = file.read().split('\n')
+        return random.choice(all_tracks)
+
+
+class Track():
+    def __init__(self, url):
+        self.url = url
+    
+
+
 # generate session token
 def generate_token():
     """ Generate the token. Please respect these credentials :) """
     sp_token = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=client_id, client_secret=client_secret, redirect_uri=redirect_uri, scope="user-library-read"))
-    # credentials = oauth2.SpotifyClientCredentials(
-    #     client_id=client_id,
-    #     client_secret=client_secret)
-    # token = credentials.get_access_token()
+
     return sp_token
-
-
-# write all saved tracks of the session user 
-def write_all_saved_tracks_url(sp_token, game_code):
-    user_id = sp_token.me()['id']
-    temp_files_path = config['tempfiles']['path']
-
-    # creates tempfiles/gamecode path if not exists
-    Path(temp_files_path + '/' + game_code).mkdir(parents=True, exist_ok=True)
-
-    text_file_path = temp_files_path +  '/' + game_code + '/' + user_id + ".txt"
-
-    current_offset = 0
-    while True:
-        # limit has a maximum of 50 tracks at a time
-        results = sp_token.current_user_saved_tracks(limit = 50, offset= current_offset)
-        write_tracks_url_to_txt(text_file_path, results)
-        # 1 set of results = 50 tracks
-        # check if there's more
-        if results['next']:
-            current_offset += 50
-
-        else:
-            break
-
-# write a batch of tracks urls into the appropriate txt file
-def write_tracks_url_to_txt(text_file_path, user_saved_tracks):
-    with open(text_file_path, 'a') as file_out:
-        for idx, item in enumerate(user_saved_tracks['items']):
-                track = item['track']
-                track_url = track['external_urls']['spotify']
-                file_out.write(track_url + '\n')
-        file_out.close()
 
 
 # generate game room ID 
@@ -100,20 +125,19 @@ def id_generator():
     return game_code
 
 
-# return one random track url in a txt file
-def select_one_random_track(txt_file):
-    file = open(txt_file, "r")
-    all_tracks = file.read().split('\n')
-    return random.choice(all_tracks)
-
-
 game_code = id_generator()
 sp_token = generate_token()
+
+fabi = User(sp_token)
+fabi.assign_to_room(game_code)
+fabi.write_all_saved_tracks_url()
+rdtrack = fabi.select_one_random_track()
+print(rdtrack)
 # write_all_saved_tracks_url(sp_token, game_code)
 
 
 text_file_path = "./tempfiles/YPAM/21uplahr2yn5wjynybk5vv3nq.txt"
-print(select_one_random_track(text_file_path))
+# print(select_one_random_track(text_file_path))
 
 # def write_tracks(text_file, tracks):
 #     with open(text_file, 'a') as file_out:
@@ -135,20 +159,3 @@ print(select_one_random_track(text_file_path))
 #                 tracks = spotify.next(tracks)
 #             else:
 #                 break
-
-
-# def write_playlist(username, playlist_id):
-#     results = spotify.user_playlist(username, playlist_id,
-#                                     fields='tracks,next,name')
-#     text_file = u'{0}.txt'.format(results['name'], ok='-_()[]{}')
-#     print(u'Writing {0} tracks to {1}'.format(
-#             results['tracks']['total'], text_file))
-#     tracks = results['tracks']
-#     write_tracks(text_file, tracks)
-
-
-# token = generate_token()
-# spotify = spotipy.Spotify(auth=token)
-
-# # example playlist
-# write_playlist('doldher', '0B4jhlB6QUGHzY8i3rEwTt')
