@@ -9,4 +9,4 @@ Also, Apple Music support is very unlikely unless someone provides me with a fre
 
 Anyway, here's a very skilled MS Paint drawing of some of my thoughts.
 
-![Screenshot](thoughts.PNG)
+![Screenshot](thoughts.png)
