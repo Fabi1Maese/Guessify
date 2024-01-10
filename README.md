@@ -7,6 +7,6 @@ This being a Python project means that I will most likely be meddling with Djang
 
 Also, Apple Music support is very unlikely unless someone provides me with a free Apple developer account.
 
-Anyway, here's a very skilled paint drawing of some of my thoughts.
+Anyway, here's a very skilled MS Paint drawing of some of my thoughts.
 
 ![Screenshot](thoughts.PNG)
