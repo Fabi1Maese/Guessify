@@ -14,24 +14,29 @@ from spotipy.client import Spotify
 # define a player object
 # a player belongs to a room 
 class Player():
-    def __init__(self, sp_token, room):
-        self.room = room
-        self.sp_token = sp_token
-        self.player_id = sp_token.me()['id']
-        self.display_name = sp_token.me()['display_name']
+    def __init__(self):
         self.saved_tracks = []
+        self.points = 0
+        self.config = Config()
         # self.temp_files_path = room.config.tempfiles_path
         # self.text_file_path = self.temp_files_path +  '/' + self.room.game_code + '/' + self.player_id + ".txt"
 
     
     def __str__(self):
         return self.display_name
+
+
+    # generate session token
+    def generate_token(self):
+        """ Generate the token. Please respect these credentials :) """
+        sp_token = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id, client_secret=self.config.client_secret,
+                                                              redirect_uri=self.config.redirect_uri, scope="user-library-read"))
+        self.sp_token = sp_token
+        self.player_id = sp_token.me()['id']
+        self.display_name = sp_token.me()['display_name']
+        return sp_token
     
-
-    def assign_to_room(self, game_code):
-        self.game_code = game_code
-
-
+    
     # write all saved tracks of the session player 
     def get_all_saved_tracks(self):
         # temp_files_path = self.temp_files_path
@@ -75,6 +80,11 @@ class Player():
         # return Track(Spotify.track(self.sp_token, track_id= random.choice(all_tracks)), self.player_id)
 
 
+    # give points to a player
+    def add_points(self, amount=1):
+        self.points += amount
+        return self.points
+
 
 # Track object, which has a Sp url, name & artist
 # also includes the json just in case
@@ -98,22 +108,20 @@ class Track():
 
 # Room object,
 class Room():
-    def __init__(self):
+    def __init__(self, creator):
         self.config = Config()
         self.game_code = ''
+        self.players = [creator]
+
+        # takes 20 points to win the game, changeable with "modify_threshold"
+        self.points_win_threshold = 20
 
 
     def __str__(self):
-        return self.game_code
-    
-
-    # generate session token
-    def generate_token(self):
-        """ Generate the token. Please respect these credentials :) """
-        sp_token = spotipy.Spotify(auth_manager=SpotifyOAuth(client_id=self.config.client_id, client_secret=self.config.client_secret,
-                                                              redirect_uri=self.config.redirect_uri, scope="user-library-read"))
-        self.token = sp_token
-        return sp_token
+        players = ''
+        for player in self.players:
+            players += player.display_name + ' '
+        return self.game_code + ' ' + players
 
 
     # generate game room ID 
@@ -124,12 +132,28 @@ class Room():
         return game_code
 
 
-room = Room()
-game_code = room.id_generator()
-sp_token = room.generate_token()
+    def modify_threshold(self, amount):
+        # can't be less than the arbitrary 5 that's in the conf file
+        if amount >= self.config.minimum_points_threshold :
+            self.points_win_threshold = amount
 
-fabi = Player(sp_token, room)
-fabi.assign_to_room(game_code)
+        return self.points_win_threshold
+    
+    
+    def add_player(self, player):
+        self.players += [player]
+
+
+fabi = Player()
+fabi.generate_token()
+
+ugo = Player()
+
+room = Room(creator=fabi)
+game_code = room.id_generator()
+
+print(room)
+
 fabi.get_all_saved_tracks()
 
 rdtrack = fabi.select_one_random_track()
