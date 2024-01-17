@@ -10,4 +10,5 @@ class Config():
         self.redirect_uri = config['CREDS']['redirect_uri']
         self.tempfiles_path = config['tempfiles']['path']
         self.game_code_size = config['settings']['game_code_size']
-        self.minimum_points_threshold = config['settings']['minimum_points_threshold']
+        self.minimum_songs_threshold = config['settings']['minimum_songs_threshold']
+        self.maximum_songs_threshold = config['settings']['maximum_songs_threshold']
